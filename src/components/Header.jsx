@@ -1,9 +1,19 @@
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import React from 'react';
+import { useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 export default function Header() {
+    const [pageState,setPageState] = useState("Sign In");
+    const auth = getAuth();
+    useEffect(() => {
+      onAuthStateChanged(auth,(user)=> {
+        user?setPageState("Profile"):setPageState("Sign In");
+      })
+    },[auth]);
     const navigate = useNavigate();
     const location = useLocation();
-    function pathMathRoute(route){
+    const pathMathRoute = (route) => {
         if(route === location.pathname){
             return true;
         }
@@ -18,7 +28,7 @@ export default function Header() {
             <ul className='flex space-x-10'>
                 <li onClick={() => navigate('/')} className={`select-none cursor-pointer py-3 text-sm font-semibold text-gray-400 border-b-[3px] border-b-transparent ${pathMathRoute('/') && "text-black border-b-red-500"}`}>Home</li>
                 <li onClick={() => navigate('/offers')} className={`select-none cursor-pointer py-3 text-sm font-semibold text-gray-400 border-b-[3px] border-b-transparent ${pathMathRoute('/offers') && "text-black border-b-red-500"}`}>Offers</li>
-                <li onClick={() => navigate('/sign-in')} className={`select-none cursor-pointer py-3 text-sm font-semibold text-gray-400 border-b-[3px] border-b-transparent ${pathMathRoute('/sign-in') && "text-black border-b-red-500"}`}>Sign In</li>
+                <li onClick={() => navigate('/profile')} className={`select-none cursor-pointer py-3 text-sm font-semibold text-gray-400 border-b-[3px] border-b-transparent ${(pathMathRoute('/sign-in') || pathMathRoute('/profile')) && "text-black border-b-red-500"}`}>{pageState}</li>
             </ul>
         </div>
       </header>
