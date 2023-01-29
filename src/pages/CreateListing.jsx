@@ -3,10 +3,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router';
 import Spinner from '../components/Spinner';
 import { toast } from 'react-toastify';
+import {getStorage,ref,uploadBytesResumable,getDownloadURL} from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
+import {v4 as uuidv4} from "uuid";
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firbase';
 
 export default function CreateListing() {
     const [geoLocationEnabled,setGeoLocationEnabled] = useState(true);
     const navigate = useNavigate();
+    const auth = getAuth();
     const [loading,setLoading] = useState(false);
     const [formData,setFormData] = useState({
         type:"rent",
@@ -42,10 +48,10 @@ export default function CreateListing() {
             }));
         }
     }
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        if(discountPrice >= regularPrice){
+        if(+discountPrice >= +regularPrice){
             setLoading(false);
             toast.error("Discounted price needs to be less than regular price");
             return;
@@ -58,8 +64,70 @@ export default function CreateListing() {
         let geolocation = {}
         let location
         if(geoLocationEnabled){
-            
+            const response = await fetch(`https://geocode.maps.co/search?q=${address}`);
+            const data = await response.json();
+            // console.log(data);
+            if(data.length !== 0){
+                geolocation.lat = data[0].lat ?? 0;
+                geolocation.lng = data[0].lon ?? 0;
+            }
+            location = data.length === 0 && undefined;
+            console.log(location);
+            if(location === undefined || String(location).includes("undefined")){
+                setLoading(false);
+                toast.error("Please fill the correct address");
+                return;
+            }else{
+                geolocation.lat = latitude;
+                geolocation.lng = longitude;
+            }
         }
+        const storeImage = async (image) => {
+            return new Promise((resolve,reject)=>{
+                const storage = getStorage()
+                const filename = `${auth.currentUser.uid}-${image.name}-${uuidv4()}`
+                const storageRef = ref(storage,filename);
+                const uploadTask = uploadBytesResumable(storageRef,image);
+                uploadTask.on('state_changed',(snapshot) => {
+                    const progress = (snapshot.bytesTransferred/snapshot.totalBytes)*100;
+                    console.log('upload is' + progress + '% done');
+                    switch(snapshot.state){
+                        case 'paused': console.log('upload is paused');break;
+                        case 'running': console.log('upload is running');break;
+                    }
+                },
+                (error) => {
+                    reject(error);
+                },
+                ()=> {
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        resolve(downloadURL);
+                    })
+                }
+                )
+            })
+        }
+        const imgUrls = await Promise.all(
+            [...images].map((image) =>storeImage(image))).catch((error) => {
+                setLoading(false);
+                toast.error("Image not Uploaded");
+                return;
+            }
+        );
+        const formDataCopy = {
+            ...formData,
+            imgUrls,
+            geolocation,
+            timestamp:serverTimestamp(),
+        };
+        delete formDataCopy.images;
+        delete formDataCopy.latitude;
+        delete formDataCopy.longitude;
+        !formDataCopy.offer && delete formDataCopy.discountPrice;
+        const docRef = await addDoc(collection(db,"listings"),formDataCopy);
+        setLoading(false);
+        toast.success("Listing created");
+        navigate(`/category/${formDataCopy.type}/${docRef.id}`);
     }
     if(loading) {
         return <Spinner/>;
