@@ -7,7 +7,7 @@ import {getStorage,ref,uploadBytesResumable,getDownloadURL} from 'firebase/stora
 import { getAuth } from 'firebase/auth';
 import {v4 as uuidv4} from "uuid";
 import { doc,addDoc, collection, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '../firbase';
+import { db } from '../firebase';
 import { useEffect } from 'react';
 
 export default function CreateListing() {
@@ -150,15 +150,23 @@ export default function CreateListing() {
             userRef:auth.currentUser.uid,
         };
         delete formDataCopy.images;
+        !formDataCopy.offer && delete formDataCopy.discountPrice;
         delete formDataCopy.latitude;
         delete formDataCopy.longitude;
-        !formDataCopy.offer && delete formDataCopy.discountPrice;
+        // delete formDataCopy.geolocation.lat;
+        // delete formDataCopy.geolocation.lng;
         const docRef = doc(db, "listings", params.listingId);
 
-        await updateDoc(docRef, formDataCopy);
-        setLoading(false);
-        toast.success("Listing Edited");
-        navigate(`/category/${formDataCopy.type}/${docRef.id}`);
+        await updateDoc(docRef, formDataCopy).then(docRef => {
+            setLoading(false);
+            toast.success("Listing Edited");
+            navigate(`/category/${formDataCopy.type}/${docRef.id}`);
+        }).catch(error => {
+            setLoading(false);
+            toast.error("Something Went Wrong");
+            return;
+        });
+        
     }
     if(loading) {
         return <Spinner/>;

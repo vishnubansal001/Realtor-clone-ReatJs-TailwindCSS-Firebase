@@ -7,7 +7,7 @@ import {getStorage,ref,uploadBytesResumable,getDownloadURL} from 'firebase/stora
 import { getAuth } from 'firebase/auth';
 import {v4 as uuidv4} from "uuid";
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firbase';
+import { db } from '../firebase';
 
 export default function CreateListing() {
     const [geoLocationEnabled,setGeoLocationEnabled] = useState(true);

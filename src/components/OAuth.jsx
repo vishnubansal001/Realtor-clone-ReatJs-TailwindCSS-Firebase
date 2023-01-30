@@ -2,7 +2,7 @@ import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
 import React from 'react';
 import {FcGoogle} from 'react-icons/fc';
 import { toast } from 'react-toastify';
-import { db } from '../firbase';
+import { db } from '../firebase';
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useNavigate } from 'react-router';
 

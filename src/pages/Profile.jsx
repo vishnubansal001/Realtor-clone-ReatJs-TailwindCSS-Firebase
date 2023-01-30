@@ -3,7 +3,7 @@ import React from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
-import { db } from '../firbase';
+import { db } from '../firebase';
 import {collection,deleteDoc,doc,getDocs,orderBy,query,updateDoc,where} from "firebase/firestore";
 import { FcHome } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
